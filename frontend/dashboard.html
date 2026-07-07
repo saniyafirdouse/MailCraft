@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace — MailCraft AI</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dashboard-body-runtime">
+    <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay"></div>
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <div class="app-layout">
+        <!-- GLOBAL CONTROL SIDEBAR -->
+        <aside class="sidebar-container" id="appSidebar">
+            <div class="sidebar-top">
+                <div class="logo">
+                    <div class="logo-icon"><i data-lucide="sparkles"></i></div>
+                    <span>MailCraft</span>
+                </div>
+                <button class="sidebar-toggle-btn" id="sidebarCollapseTrigger">
+                    <i data-lucide="panel-left-close"></i>
+                </button>
+            </div>
+            
+            <nav class="sidebar-navigation-links">
+                <button class="nav-control-node active" data-panel="generate">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="pencil-line"></i><span>Generator</span>
+                </button>
+                <button class="nav-control-node" data-panel="improve">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="wand-2"></i><span>Improver</span>
+                </button>
+                <button class="nav-control-node" data-panel="grammar">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="check-square"></i><span>Grammar Hub</span>
+                </button>
+                <button class="nav-control-node" data-panel="tone">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="sliders"></i><span>Tone Match</span>
+                </button>
+                <button class="nav-control-node" data-panel="summary">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="file-text"></i><span>Summarizer</span>
+                </button>
+                <button class="nav-control-node" data-panel="translate">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="languages"></i><span>Translator</span>
+                </button>
+                <button class="nav-control-node" data-panel="history">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="database"></i><span>History Vault</span>
+                </button>
+                <button class="nav-control-node" data-panel="settings">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="settings"></i><span>System Settings</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-session-badge">
+                    <div class="avatar-placeholder" id="userAvatarInitials">P</div>
+                    <div class="user-meta-strings">
+                        <span class="user-name-label" id="profileNameDisplay">Pruthvi</span>
+                        <span class="user-tier-tag">Pro Plan</span>
+                    </div>
+                </div>
+                <button class="action-logout-trigger" id="logoutBtn">
+                    <i data-lucide="log-out"></i><span>System Exit</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MOBILE MENU BUTTON -->
+        <button class="mobile-menu-btn" id="mobileMenuBtn" style="display:none; position:fixed; top:16px; left:16px; z-index:80; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:10px; cursor:pointer; color:var(--text-primary); box-shadow:var(--shadow-md);">
+            <i data-lucide="menu" style="width:20px;height:20px;"></i>
+        </button>
+
+        <!-- PRIMARY INTERACTIVE VIEW WORKSPACE -->
+        <main class="main-workspace-frame">
+            
+            <!-- PANEL: GENERATOR (DEFAULT ACTIVE) -->
+             <section id="panel-generate" class="workspace-panel active">
+                <div class="workspace-panel-header">
+                    <h1>Email Generator</h1>
+                    <p>Create professional emails tailored to your needs with AI assistance.</p>
+                </div>
+                
+                <div class="panel-layout-grid">
+                    <!-- LEFT PARAMETERS PANEL -->
+                    <div class="input-parameters-column">
+                        <form class="surface-card parameters-form" id="formGenerate">
+                            <div class="form-field">
+                                <label>Target Recipient</label>
+                                <select id="genRecipient" class="custom-select-element">
+                                    <option value="Hiring Manager">Hiring Manager</option>
+                                    <option value="HR Manager">HR Manager</option>
+                                    <option value="Professor">Professor</option>
+                                    <option value="Client">Client</option>
+                                    <option value="Team Lead">Team Lead</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label>Core Email Purpose</label>
+                                <select id="genPurpose" class="custom-select-element">
+                                    <option value="Job Application">Job Application</option>
+                                    <option value="Internship Application" selected>Internship Application</option>
+                                    <option value="Leave Request">Leave Request</option>
+                                    <option value="Meeting Request">Meeting Request</option>
+                                    <option value="Thank You">Thank You</option>
+                                    <option value="Follow-up">Follow-up</option>
+                                    <option value="Complaint">Complaint</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label>Tell AI what to include</label>
+                                <div class="textarea-container">
+                                    <textarea id="genContext" rows="5" placeholder="Mention your skills, achievements, deadlines, or any specific points you'd like included." class="interactive-textarea"></textarea>
+                                    <div class="textarea-metrics-overlay">
+                                        <span id="genCharCount">0 chars</span> • <span id="genWordCount">0 words</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row-tri-layout">
+                                <div class="form-field">
+                                    <label>Tone</label>
+                                    <select id="genTone" class="custom-select-element">
+                                        <option value="Professional">Professional</option>
+                                        <option value="Formal">Formal</option>
+                                        <option value="Persuasive">Persuasive</option>
+                                        <option value="Friendly">Friendly</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label>Language</label>
+                                    <select id="genLang" class="custom-select-element">
+                                        <option value="English">English</option>
+                                        <option value="French">French</option>
+                                        <option value="Spanish">Spanish</option>
+                                        <option value="German">German</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label>Length</label>
+                                    <select id="genLength" class="custom-select-element">
+                                        <option value="Short">Short</option>
+                                        <option value="Medium" selected>Medium</option>
+                                        <option value="Long">Long</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-gradient btn-large w-100 execution-trigger-btn" id="btnGenSubmit">
+                                <span>Generate with AI</span>
+                                <i data-lucide="sparkles"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- RIGHT STACKED OUTPUT PIPELINE PANEL (FULL HORIZONTAL WIDTH GAP REDUCTION) -->
+                    <div class="outputs-display-pipeline">
+                        <!-- SKELETON DISPLAY COMPONENT -->
+                        <div class="skeleton-loading-container" id="genSkeletonView" style="display: none;">
+                            <div class="skeleton-bar title-skeleton animate-pulse"></div>
+                            <div class="skeleton-card animate-pulse" style="height: 50px;"></div>
+                            <div class="skeleton-card animate-pulse" style="height: 220px;"></div>
+                            <div class="skeleton-card animate-pulse" style="height: 100px;"></div>
+                            <p class="skeleton-loading-label">AI is crafting your email...</p>
+                        </div>
+
+                        <!-- TRUE OUTPUTS DOM HOOK (STACED ENTIRELY ACCORDING TO DESIGN GUIDELINES) -->
+                        <div class="true-rendered-outputs-group" id="genOutputsGroup">
+                            <!-- GENERATION META BAR: TIMESTAMP + REGENERATE -->
+                            <div class="surface-card dynamic-output-card animate-fade-in" style="flex-direction:row; align-items:center; justify-content:space-between; padding:16px 24px;">
+                                <span class="reading-time-badge" id="genTimestamp"><i data-lucide="clock" style="width:12px;height:12px;display:inline;margin-right:4px;"></i>Not generated yet</span>
+                                <button class="output-clipboard-action-btn" id="regenerateBtn" type="button"><i data-lucide="refresh-cw"></i> Regenerate</button>
+                            </div>
+                            <!-- CARD 1: SUBJECT -->
+
+                            <div class="surface-card dynamic-output-card animate-fade-in">
+                                <div class="card-action-header">
+                                    <span class="card-classification-badge"><i data-lucide="bookmark"></i> Subject</span>
+                                    <button class="output-clipboard-action-btn" id="copySubjectBtn"><i data-lucide="copy"></i> Copy</button>
+                                </div>
+                                <div class="rendered-text-canvas email-typography-subject" id="outGenSubject">Generated subject lines materialize here...</div>
+                            </div>
+
+                            <!-- CARD 2: EMAIL BODY -->
+                            <div class="surface-card dynamic-output-card animate-fade-in">
+                                <div class="card-action-header">
+                                    <span class="card-classification-badge"><i data-lucide="file-text"></i> Email Body</span>
+                                    <div class="header-utilities-row">
+                                        <span class="reading-time-badge"><i data-lucide="align-left" style="width:12px;height:12px;display:inline;margin-right:4px;"></i><span id="bodyWordMetric">0 words</span></span>
+                                        <span class="reading-time-badge"><i data-lucide="clock" style="width:12px;height:12px;display:inline;margin-right:4px;"></i><span id="bodyReadingTime">0 min read</span></span>
+                                        <button class="output-clipboard-action-btn btn-action-tool" id="saveEmailBtn" title="Save Asset"><i data-lucide="save"></i> Save</button>
+                                        <button class="output-clipboard-action-btn" id="copyBodyBtn"><i data-lucide="copy"></i> Copy</button>
+                                    </div>
+                                </div>
+                                <div class="rendered-text-canvas email-typography-body" id="outGenBody">The structural email core text content will materialize inside this workspace dashboard canvas card module zone...</div>
+                            </div>
+
+                            <!-- CARD 3: PROFESSIONAL SIGNATURE -->
+                            <div class="surface-card dynamic-output-card animate-fade-in">
+                                <div class="card-action-header">
+                                    <span class="card-classification-badge"><i data-lucide="pen-tool"></i> Professional Signature</span>
+                                    <button class="output-clipboard-action-btn" id="copySigBtn"><i data-lucide="copy"></i> Copy</button>
+                                </div>
+                                <div class="rendered-text-canvas email-typography-body" id="outGenSignature">Kind Regards,&#10;&#10;Pruthvi&#10;Computer Science Student&#10;GitHub: github.com/pruthvi&#10;LinkedIn: linkedin.com/in/pruthvi</div>
+                            </div>
+
+                            <!-- CARD 4: CONTEXTUAL STRATEGIC SUGGESTIONS -->
+                            <div class="surface-card utility-suggestion-card animate-fade-in">
+                                <div class="suggestion-header"><i data-lucide="list-checks"></i> AI Execution Suggestions</div>
+                                <ul class="suggestions-bullet-list" id="outGenSuggestions">
+                                    <li><i data-lucide="check-circle-2" class="success-icon"></i> Attach your updated resume / CV portfolio asset.</li>
+                                    <li><i data-lucide="check-circle-2" class="success-icon"></i> Mention your high-signal engineering GitHub profile repository logs.</li>
+                                    <li><i data-lucide="check-circle-2" class="success-icon"></i> Personalize the target company baseline name placeholder strings.</li>
+                                    <li><i data-lucide="check-circle-2" class="success-icon"></i> Add your professional corporate LinkedIn profile tracking axis.</li>
+                                    <li><i data-lucide="check-circle-2" class="success-icon"></i> Proofread systemic variable contents carefully before dispatching server mail pipelines.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL: IMPROVER -->
+                <section id="panel-improve" class="workspace-panel">
+                <div class="workspace-panel-header">
+                    <h1>Email Improver</h1>
+                    <p>Paste your draft and let AI enhance clarity, professionalism, and flow.</p>
+                </div>
+                <div class="panel-layout-grid">
+                    <div class="input-parameters-column">
+                        <form class="surface-card parameters-form" id="formImprove">
+                            <div class="form-field">
+                                <label>Draft Copy Canvas</label>
+                                <textarea id="impText" rows="12" placeholder="Paste structural email copy here to run optimization routines..." class="interactive-textarea" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-gradient w-100" id="btnImpSubmit">Optimize Copy Layout</button>
+                        </form>
+                    </div>
+                    <div class="outputs-display-pipeline">
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header"><span class="card-classification-badge">Original Raw Draft</span></div>
+                            <div class="rendered-text-canvas email-typography-body" id="outOriginalEmailDisplay">Your original text variant maps here...</div>
+                        </div>
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header">
+                                <span class="card-classification-badge">Optimized Revision Variant</span>
+                                <button class="output-clipboard-action-btn" id="copyImprovedBtn"><i data-lucide="copy"></i> Copy</button>
+                            </div>
+                            <div class="rendered-text-canvas email-typography-body" id="outImprovedEmail"></div>
+                        </div>
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header"><span class="card-classification-badge">Structural Refinement Summary</span></div>
+                            <div class="rendered-text-canvas email-typography-body" id="outImproveSummary"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL: GRAMMAR HUB -->
+            <section id="panel-grammar" class="workspace-panel">
+                <div class="workspace-panel-header">
+                    <h1>Grammar Check</h1>
+                    <p>Instantly detect and fix grammar, spelling, and punctuation errors.</p>
+                </div>
+                <div class="panel-layout-grid">
+                    <div class="input-parameters-column">
+                        <form class="surface-card parameters-form" id="formGrammar">
+                            <div class="form-field">
+                                <label>Analysis Input Target</label>
+                                <textarea id="gramText" rows="12" placeholder="Paste copy to pass through compiler logic syntax checks..." class="interactive-textarea" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-gradient w-100" id="btnGramSubmit">Run Diagnostics Routine</button>
+                        </form>
+                    </div>
+                    <div class="outputs-display-pipeline">
+                        <div class="metrics-dashboard-row-layout">
+                            <div class="surface-card metric-square-widget">
+                                <span class="widget-label">Grammar Score</span>
+                                <span class="widget-giant-metric gradient-text" id="outGrammarScore">--</span>
+                            </div>
+                        </div>
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header">
+                                <span class="card-classification-badge">Improved Version</span>
+                                <button class="output-clipboard-action-btn" id="copyGrammarBtn"><i data-lucide="copy"></i> Copy</button>
+                            </div>
+                            <div class="rendered-text-canvas email-typography-body" id="outGrammarCorrected"></div>
+                        </div>
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header"><span class="card-classification-badge">Spelling Mistakes & Corrections</span></div>
+                            <div class="rendered-text-canvas email-typography-body" id="outGrammarMistakes"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL: TONE MATCH -->
+            <section id="panel-tone" class="workspace-panel">
+                <div class="workspace-panel-header">
+                    <h1>Tone Adjustment</h1>
+                    <p>Rewrite your text to match the perfect tone for any situation.</p>
+                </div>
+                <div class="panel-layout-grid">
+                    <div class="input-parameters-column">
+                        <form class="surface-card parameters-form" id="formTone">
+                            <div class="form-field">
+                                <label>Base Input String</label>
+                                <textarea id="toneText" rows="8" placeholder="Paste working text segment..." class="interactive-textarea" required></textarea>
+                            </div>
+                            <div class="form-field">
+                                <label>Select Tone Profile</label>
+                                <select id="toneTarget" class="custom-select-element">
+                                    <option value="Professional">Professional</option>
+                                    <option value="Friendly">Friendly</option>
+                                    <option value="Formal">Formal</option>
+                                    <option value="Confident">Confident</option>
+                                    <option value="Persuasive">Persuasive</option>
+                                    <option value="Empathetic">Empathetic</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-gradient w-100" id="btnToneSubmit">Rewrite Accordingly</button>
+                        </form>
+                    </div>
+                    <div class="outputs-display-pipeline">
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header">
+                                <span class="card-classification-badge">Rewritten Copy Output</span>
+                                <button class="output-clipboard-action-btn" id="copyToneBtn"><i data-lucide="copy"></i> Copy</button>
+                            </div>
+                            <div class="rendered-text-canvas email-typography-body" id="outToneRender"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL: SUMMARIZER -->
+            <section id="panel-summary" class="workspace-panel">
+                <div class="workspace-panel-header">
+                    <h1>Email Summarizer</h1>
+                    <p>Extract key points, action items, and summaries from long emails.</p>
+                </div>
+                <div class="panel-layout-grid">
+                    <div class="input-parameters-column">
+                        <form class="surface-card parameters-form" id="formSummary">
+                            <div class="form-field">
+                                <label>Dense Structural Document Payload</label>
+                                <textarea id="sumText" rows="12" placeholder="Paste large email strings here..." class="interactive-textarea" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-gradient w-100" id="btnSumSubmit">Generate Summary</button>
+                        </form>
+                    </div>
+                    <div class="outputs-display-pipeline">
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header"><span class="card-classification-badge">Summary Abstract</span></div>
+                            <div class="rendered-text-canvas email-typography-body" id="outSummaryAbstract"></div>
+                        </div>
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header"><span class="card-classification-badge">Bullet Points</span></div>
+                            <div class="rendered-text-canvas email-typography-body" id="outSummaryBullets"></div>
+                        </div>
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header"><span class="card-classification-badge">Action Items</span></div>
+                            <div class="rendered-text-canvas email-typography-body" id="outSummaryActions"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL: TRANSLATOR -->
+            <section id="panel-translate" class="workspace-panel">
+                <div class="workspace-panel-header">
+                    <h1>Email Translator</h1>
+                    <p>Translate your emails to and from multiple languages instantly.</p>
+                </div>
+
+                <div class="panel-layout-grid">
+                    <div class="input-parameters-column">
+                        <form class="surface-card parameters-form" id="formTranslate">
+                            <div class="form-field">
+                                <label>Source Payload Text</label>
+                                <textarea id="transText" rows="8" placeholder="Enter source text structures..." class="interactive-textarea" required></textarea>
+                            </div>
+                            <div class="form-field">
+                                <label>Target Language</label>
+                                <select id="transTarget" class="custom-select-element">
+                                    <option value="English">English</option>
+                                    <option value="Hindi">Hindi</option>
+                                    <option value="Kannada">Kannada</option>
+                                    <option value="French">French</option>
+                                    <option value="German">German</option>
+                                    <option value="Spanish">Spanish</option>
+                                    <option value="Japanese">Japanese</option>
+                                    <option value="Chinese">Chinese</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-gradient w-100" id="btnTransSubmit">Translate Email</button>
+                        </form>
+                    </div>
+                    <div class="outputs-display-pipeline">
+                        <div class="surface-card dynamic-output-card">
+                            <div class="card-action-header">
+                                <span class="card-classification-badge">Translated Output Canvas</span>
+                                <button class="output-clipboard-action-btn" id="copyTransBtn"><i data-lucide="copy"></i> Copy</button>
+                            </div>
+                            <div class="rendered-text-canvas email-typography-body" id="outTranslateRender"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL: HISTORY ENGINE VAULT (UPGRADED HIGH FIDELITY GRID CHANNELS) -->
+            <section id="panel-history" class="workspace-panel">
+                <div class="workspace-panel-header">
+                    <h1>History</h1>
+                    <p>Search, filter, and reuse your previously generated emails.</p>
+                </div>
+                
+                <div class="surface-card history-controls-filter-bar">
+                    <div class="search-input-field-wrapper">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="histSearchInput" placeholder="Search historical logs...">
+                    </div>
+                    <div class="filter-actions-selectors-group">
+                        <select id="histTypeFilter" class="custom-select-element select-sm">
+                            <option value="ALL">All Tools</option>
+                            <option value="generation">Generations</option>
+                            <option value="improvement">Improvements</option>
+                        </select>
+                        <select id="histSortOrder" class="custom-select-element select-sm">
+                            <option value="NEWEST">Sort: Newest First</option>
+                            <option value="OLDEST">Sort: Oldest First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- PREMIUM MESH MATRIX LAYOUT FOR HISTORY VAULT CARDS -->
+                <div class="history-grid-mesh-system" id="historyStreamTarget">
+                    <!-- Cards populate cleanly within programmatic loop maps inside app.js -->
+                </div>
+            </section>
+
+            <!-- PANEL: ENGINE STATUS SETTINGS -->
+            <!-- PANEL: ENGINE STATUS SETTINGS -->
+<section id="panel-settings" class="workspace-panel">
+    <div class="workspace-panel-header">
+        <h1>Profile Manager</h1>
+        <p>Manage your profile and application preferences.</p>
+    </div>
+    <div class="settings-sections-flex-stack">
+        <div class="surface-card config-group-card">
+            <h3>Profile Information</h3>
+            <form id="formProfileSettings">
+                <div class="form-field" style="margin-top:14px; margin-bottom:14px;">
+                    <label>Full Name</label>
+                    <input type="text" id="settingsFullName" class="custom-input-box-element" placeholder="Your name" required>
+                </div>
+                <div class="form-field" style="margin-bottom:14px;">
+                    <label>Email Address</label>
+                    <input type="text" id="settingsEmailDisplay" class="custom-input-box-element" readonly disabled>
+                </div>
+                <div class="form-field" style="margin-bottom:14px;">
+                    <label>Professional Title / Designation</label>
+                    <input type="text" id="settingsTitle" class="custom-input-box-element" placeholder="e.g. Computer Science Student">
+                </div>
+                <div class="form-field" style="margin-bottom:14px;">
+                    <label>Default Email Signature</label>
+                    <textarea id="settingsSignature" rows="4" class="interactive-textarea" placeholder="Kind Regards,&#10;Your Name"></textarea>
+                </div>
+                <button type="submit" class="btn btn-gradient" id="btnProfileSave">
+                    <span>Save Changes</span>
+                    <i data-lucide="save"></i>
+                </button>
+            </form>
+        </div>
+
+        <div class="surface-card config-group-card">
+            <h3>Platform Interface Variations</h3>
+                        <div class="interactive-switch-row">
+                <div class="switch-description-block">
+                    <span class="switch-title">Show Notifications</span>
+                    <span class="switch-caption">Display toast notifications when actions complete.</span>
+                </div>
+                <label class="toggle-switch-ui-box">
+                    <input type="checkbox" id="configToastsToggle" checked>
+                    <span class="toggle-slider-nob"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+</section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

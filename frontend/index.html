@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MailCraft — Elite AI Email Engineering Workspace</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="radial-ambient-glow"></div>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <header class="navbar">
+        <div class="logo">
+            <div class="logo-icon"><i data-lucide="sparkles"></i></div>
+            <span>MailCraft</span>
+        </div>
+        <button class="btn btn-secondary nav-action-btn" id="openAuthBtn">
+            <span>Sign In</span>
+            <kbd class="shortcut-tip">⌘K</kbd>
+        </button>
+    </header>
+
+      <main class="landing-hero animate-fade-in">
+        <div class="pill-badge">
+            <span class="pulse-dot"></span>
+            <span>AI-Powered Email Assistant</span>
+        </div>
+        <h1>Write better emails<br><span class="gradient-text">in seconds</span></h1>
+        <p>Generate, improve, translate, and summarize emails with AI. Professional results, zero effort.</p>
+        <button class="btn btn-gradient btn-lg" id="getStartedBtn">
+            <span>Get Started Free</span>
+            <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
+        </button>
+        <p style="margin-top: 14px; font-size: 0.8rem; color: var(--text-muted); letter-spacing: -0.01em;">No credit card required</p>
+
+        <div class="envelope-wrapper">
+            <div class="envelope-scene">
+                <div class="envelope-body">
+                    <div class="envelope-bottom-fold"></div>
+                    <div class="envelope-paper">
+                        <div class="envelope-line"></div>
+                        <div class="envelope-line"></div>
+                        <div class="envelope-line"></div>
+                    </div>
+                    <div class="envelope-flap"></div>
+                    <div class="envelope-accent"></div>
+                </div>
+            </div>
+            <div class="envelope-shadow"></div>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-surface animate-scale-up">
+            <button class="modal-close-trigger" id="closeModalBtn">&times;</button>
+               <div class="modal-tabs">
+                <button class="modal-tab-btn active" id="tabLogin">Sign In</button>
+                <button class="modal-tab-btn" id="tabRegister">Create Account</button>
+            </div>
+            <form id="authForm" class="auth-form-pipeline">
+                                <div class="form-field" id="nameGroup" style="display: none;">
+                    <label for="authName">Full Name</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="user" class="field-icon"></i>
+                        <input type="text" id="authName" placeholder="John Doe">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="authEmail">Email Address</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="mail" class="field-icon"></i>
+                        <input type="email" id="authEmail" placeholder="you@company.com" required>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="authPassword">Password</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock" class="field-icon"></i>
+                        <input type="password" id="authPassword" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-gradient w-100" id="authSubmitBtn">
+                    <span>Continue</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
