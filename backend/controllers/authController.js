@@ -45,27 +45,50 @@ exports.getProfile = async (req, res, next) => {
     try {
         const { data: user, error } = await supabase
             .from('users')
-            .select('name, email, title, signature')
+            .select('name, email, title, signature, signatures, writing_sample_1, writing_sample_2, writing_sample_3, match_style_default')
             .eq('id', req.user.id)
             .single();
 
         if (error || !user) return res.status(404).json({ success: false, message: 'Profile not found.' });
-        res.status(200).json({ success: true, data: user });
+
+        let signatures = user.signatures;
+        if ((!signatures || signatures.length === 0) && user.signature) {
+            signatures = [{
+                id: 'default',
+                label: 'Default',
+                fullName: '',
+                jobTitle: '',
+                company: '',
+                contact: '',
+                website: '',
+                rawText: user.signature
+            }];
+            await supabase.from('users').update({ signatures }).eq('id', req.user.id);
+        }
+
+        res.status(200).json({ success: true, data: { ...user, signatures: signatures || [] } });
     } catch (error) { next(error); }
 };
-
 exports.updateProfile = async (req, res, next) => {
     try {
-        const { name, title, signature } = req.body;
+        const { name, title, signatures, writingSample1, writingSample2, writingSample3, matchStyleDefault } = req.body;
         if (!name || !name.trim()) {
             return res.status(400).json({ success: false, message: 'Full name is required.' });
         }
 
         const { data: updatedUser, error } = await supabase
             .from('users')
-            .update({ name: name.trim(), title: title || null, signature: signature || null })
+            .update({
+                name: name.trim(),
+                title: title || null,
+                signatures: Array.isArray(signatures) ? signatures : [],
+                writing_sample_1: writingSample1 || null,
+                writing_sample_2: writingSample2 || null,
+                writing_sample_3: writingSample3 || null,
+                match_style_default: !!matchStyleDefault
+            })
             .eq('id', req.user.id)
-            .select('name, email, title, signature')
+            .select('name, email, title, signature, signatures, writing_sample_1, writing_sample_2, writing_sample_3, match_style_default')
             .single();
 
         if (error) throw error;

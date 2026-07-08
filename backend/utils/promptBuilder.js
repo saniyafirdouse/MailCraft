@@ -1,4 +1,4 @@
-function buildGenerateEmailPrompt({ recipient, purpose, tone, length, language, context, notes }) {
+function buildGenerateEmailPrompt({ recipient, purpose, tone, length, language, context, notes, writingSamples }) {
     return `You are an expert professional email writer. Write a complete email based on these parameters:
 Recipient: ${recipient || 'Not specified'}
 Purpose: ${purpose || 'Not specified'}
@@ -8,20 +8,43 @@ Language: ${language || 'English'}
 Context: ${context || 'None provided'}
 Additional notes: ${notes || 'None'}
 
+${writingSamples ? `The user has provided the following samples of their own personal writing style. Match the sentence rhythm, vocabulary choices, and overall voice of these samples as closely as possible while still fulfilling the request above:\n"""\n${writingSamples}\n"""\n` : ''}
+Do NOT invent or include any signature, sender name, job title, GitHub link, or LinkedIn link. The email body should end naturally without a closing signature block — that will be added separately by the platform.
+
 Return ONLY valid JSON. Do not include markdown code blocks or backticks. Use this format:
 {
   "subject": "string",
-  "body": "string (use \\n for line breaks)",
-  "signature": "string"
+  "body": "string (use \\n for line breaks, do not include a signature block)",
+  "signature": ""
 }`;
 }
 
-function buildImproveEmailPrompt({ emailText }) {
+function buildSmartReplyPrompt({ receivedEmail, additionalInstructions }) {
+    return `You are an expert professional email assistant. A user has received the following email:
+"""
+${receivedEmail}
+"""
+
+${additionalInstructions ? `The user also wants the following point(s) included or addressed in the replies: "${additionalInstructions}"\n` : ''}
+Generate exactly 3 distinct reply options for this email, each with a different approach (e.g. one accepting/agreeing, one declining/pushing back, one asking for more information or proposing a follow-up — adapt based on what fits the email). If the user provided additional instructions above, make sure all 3 replies naturally incorporate that point. Keep each reply professional, concise, and ready to send.
+
+Return ONLY valid JSON. Do not include markdown code blocks or backticks. Use this format:
+{
+  "replies": [
+    {"label": "string (short 2-4 word description of this reply's approach)", "text": "string (use \\n for line breaks)"},
+    {"label": "string", "text": "string (use \\n for line breaks)"},
+    {"label": "string", "text": "string (use \\n for line breaks)"}
+  ]
+}`;
+}
+
+function buildImproveEmailPrompt({ emailText, writingSamples }) {
     return `You are an expert email editor. Improve the following email text while preserving intent:
 """
 ${emailText}
 """
 
+${writingSamples ? `The user has provided the following samples of their own personal writing style. While improving the email, adjust the phrasing to match the sentence rhythm, vocabulary choices, and overall voice of these samples as closely as possible:\n"""\n${writingSamples}\n"""\n` : ''}
 Return ONLY valid JSON. Do not include markdown code blocks or backticks. Use this format:
 {
   "improvedEmail": "string (use \\n for line breaks)",
@@ -83,6 +106,7 @@ Return ONLY valid JSON. Do not include markdown code blocks or backticks. Use th
 
 module.exports = {
     buildGenerateEmailPrompt,
+    buildSmartReplyPrompt,
     buildImproveEmailPrompt,
     buildGrammarCheckPrompt,
     buildToneChangePrompt,

@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Structural state engines
     let authStateMode = 'login';
     let loadedHistoryCache = [];
+    let userSignatures = [];
     const API_ROOT = `${window.location.origin}/api`;
 
     // Initialize Lucide iconography if present on window scope
@@ -266,15 +267,16 @@ document.addEventListener('DOMContentLoaded', () => {
             outputGroup.style.display = 'none';
             outputGroup.style.opacity = '0';
 
+            const genMatchStyleToggle = document.getElementById('genMatchStyleToggle');
             const serverPacketResponse = await resolveSecurePostHandshake('generate-email', {
                 recipient: document.getElementById('genRecipient').value,
                 purpose: document.getElementById('genPurpose').value,
                 context: document.getElementById('genContext').value,
                 tone: document.getElementById('genTone').value,
                 language: document.getElementById('genLang').value,
-                length: document.getElementById('genLength').value
+                length: document.getElementById('genLength').value,
+                matchStyle: genMatchStyleToggle ? genMatchStyleToggle.checked : false
             });
-
             submitBtn.disabled = false;
             skeleton.style.display = 'none';
             outputGroup.style.display = 'flex';
@@ -286,7 +288,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById('outGenSubject').textContent = serverPacketResponse.data.subject || '';
             document.getElementById('outGenBody').textContent = serverPacketResponse.data.body || '';
-            document.getElementById('outGenSignature').textContent = serverPacketResponse.data.signature || '';
+
+            const genSignatureSelect = document.getElementById('genSignatureSelect');
+            const selectedSigId = genSignatureSelect ? genSignatureSelect.value : '';
+            const outGenSignatureEl = document.getElementById('outGenSignature');
+            if (selectedSigId) {
+                const chosenSig = userSignatures.find(s => s.id === selectedSigId);
+                outGenSignatureEl.textContent = assembleSignatureText(chosenSig) || 'This signature has no content yet.';
+            } else {
+                outGenSignatureEl.textContent = 'No signature selected for this email.';
+            }
 
             const bodyWords = (serverPacketResponse.data.body || '').trim() === '' ? 0 : serverPacketResponse.data.body.trim().split(/\s+/).length;
             const bodyWordMetric = document.getElementById('bodyWordMetric');
@@ -320,6 +331,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    // FORM EXECUTION: SMART REPLY PIPELINE
+    const formSmartReply = document.getElementById('formSmartReply');
+    if (formSmartReply) {
+        formSmartReply.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!validateAIInput(document.getElementById('smartReplyText').value, 'Received email text', 10, 5000)) return;
+
+            const submitBtn = document.getElementById('btnSmartReplySubmit');
+            const skeleton = document.getElementById('smartReplySkeletonView');
+            const outputGroup = document.getElementById('smartReplyOutputsGroup');
+
+            submitBtn.disabled = true;
+            skeleton.style.display = 'flex';
+            outputGroup.innerHTML = '';
+
+            const res = await resolveSecurePostHandshake('smart-reply', {
+                receivedEmail: document.getElementById('smartReplyText').value,
+                additionalInstructions: document.getElementById('smartReplyInstructions').value
+            });
+
+            submitBtn.disabled = false;
+            skeleton.style.display = 'none';
+
+            if (!res || !res.success) return triggerToast(res?.message || 'Unable to generate replies.', 'error');
+
+            const replies = res.data.replies || [];
+            outputGroup.innerHTML = replies.map((reply, idx) => `
+                <div class="surface-card dynamic-output-card animate-fade-in">
+                    <div class="card-action-header">
+                        <span class="card-classification-badge"><i data-lucide="reply"></i> ${reply.label || `Reply Option ${idx + 1}`}</span>
+                        <button class="output-clipboard-action-btn smart-reply-copy-btn" data-reply-id="smartReplyText${idx}"><i data-lucide="copy"></i> Copy</button>
+                    </div>
+                    <div class="rendered-text-canvas email-typography-body" id="smartReplyText${idx}">${reply.text || ''}</div>
+                </div>
+            `).join('');
+
+            initIcons();
+
+            document.querySelectorAll('.smart-reply-copy-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sourceId = btn.getAttribute('data-reply-id');
+                    const textToCopy = document.getElementById(sourceId).textContent;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        triggerToast('Reply copied to clipboard.');
+                        btn.innerHTML = `<i data-lucide="check"></i><span>Copied</span>`;
+                        setTimeout(() => {
+                            btn.innerHTML = `<i data-lucide="copy"></i><span>Copy</span>`;
+                            initIcons();
+                        }, 2000);
+                    });
+                });
+            });
+
+            triggerToast('Smart replies generated successfully.');
+        });
+    }
+
     // FORM EXECUTION: IMPROVER PIPELINE
     const formImprove = document.getElementById('formImprove');
     if (formImprove) {
@@ -331,8 +400,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = document.getElementById('btnImpSubmit');
             btn.disabled = true;
             
-            const res = await resolveSecurePostHandshake('improve', { emailText: document.getElementById('impText').value });
-            btn.disabled = false;
+const impMatchStyleToggle = document.getElementById('impMatchStyleToggle');
+            const res = await resolveSecurePostHandshake('improve', {
+                emailText: document.getElementById('impText').value,
+                matchStyle: impMatchStyleToggle ? impMatchStyleToggle.checked : false
+            });
+                        btn.disabled = false;
 
             if (!res || !res.success) return triggerToast(res?.message || 'Error processing response.', 'error');
 
@@ -486,7 +559,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let processedArray = [...loadedHistoryCache];
 
         // 1. Structural Filter Phase
-        if (typeFilter !== 'ALL') {
+        // 1. Structural Filter Phase
+        if (typeFilter === 'FAVORITES') {
+            processedArray = processedArray.filter(item => item.is_favorite === true);
+        } else if (typeFilter !== 'ALL') {
             processedArray = processedArray.filter(item => item.type === typeFilter);
         }
 
@@ -513,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = '';
         processedArray.forEach(item => {
             const card = document.createElement('div');
-            card.className = 'surface-card history-stream-card animate-fade-in';
+            card.className = 'history-vault-premium-card animate-fade-in';
             
             // Safe content parsing abstraction layers
             let payloadTitle = item.type.toUpperCase();
@@ -523,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 if (item.type === 'generation') {
                     payloadTitle = item.input_data.purpose || 'Custom Email Generation';
-                    subheadMeta = `<span class="meta-pill-tag accented">${item.input_data.recipient || 'Recipient'}</span><span class="meta-pill-tag">${item.input_data.tone || 'Professional'}</span>`;
+                    subheadMeta = `${item.input_data.recipient || 'Recipient'} • ${item.input_data.tone || 'Professional'}`;
                     const parsedResponse = JSON.parse(item.response_data);
                     contentSnippetText = `Subject: ${parsedResponse.subject || ''} | ${parsedResponse.body || ''}`;
                 } else {
@@ -535,25 +611,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const timestampFormatted = new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
 
-            // Detect matching local favorite states mapping attributes cleanly
-            const localFavKey = `mailcraft_fav_${item.id}`;
-            const isFavorited = localStorage.getItem(localFavKey) === 'true';
+            const displayTitle = item.custom_title || payloadTitle;
+            const isFavorited = !!item.is_favorite;
 
             card.innerHTML = `
-                <div class="history-stream-card-top">
-                    <div class="history-meta-badge-stack">
-                        <span class="meta-pill-tag" style="background:rgba(108,99,255,0.1); color:var(--color-accent); font-weight:600;">${item.type.toUpperCase()}</span>
-                        <strong style="font-size:0.95rem; font-weight:500;">${payloadTitle}</strong>
-                        ${subheadMeta}
-                    </div>
-                    <div class="history-card-actions-wrapper">
-                        <span class="history-timestamp-string">${timestampFormatted}</span>
-                        <button class="history-action-icon-btn fav-trigger ${isFavorited ? 'fav-active' : ''}" data-id="${item.id}" title="Toggle Favorite status"><i data-lucide="star"></i></button>
-                        <button class="history-action-icon-btn reuse-trigger" data-id="${item.id}" title="Restore and reuse payload configurations"><i data-lucide="refresh-cw"></i></button>
-                        <button class="history-action-icon-btn delete-trigger" data-id="${item.id}" title="Purge item tracking node"><i data-lucide="trash-2"></i></button>
+                <div class="history-vault-card-header">
+                    <div class="history-vault-identity-block">
+                        <span class="history-vault-primary-title">${displayTitle}</span>
+                        <span class="history-vault-recipient-sub">${subheadMeta || timestampFormatted}</span>
                     </div>
                 </div>
                 <div class="history-snippet-preview-text">${contentSnippetText}</div>
+                <div class="history-vault-action-row">
+                    <div class="history-vault-meta-stack">
+                        <span class="history-vault-pill-node accent-variant">${item.type.toUpperCase()}</span>
+                        <span class="history-vault-pill-node">${timestampFormatted}</span>
+                    </div>
+                    <div class="history-vault-control-buttons">
+                        <button class="history-vault-btn-node fav-trigger ${isFavorited ? 'active-fav' : ''}" data-id="${item.id}" title="Toggle Favorite"><i data-lucide="heart"></i></button>
+                        <button class="history-vault-btn-node rename-trigger" data-id="${item.id}" title="Rename entry"><i data-lucide="pencil"></i></button>
+                        <button class="history-vault-btn-node reuse-trigger" data-id="${item.id}" title="Reuse in Generator"><i data-lucide="refresh-cw"></i></button>
+                        <button class="history-vault-btn-node danger-purge delete-trigger" data-id="${item.id}" title="Delete entry"><i data-lucide="trash-2"></i></button>
+                    </div>
+                </div>
             `;
             container.appendChild(card);
         });
@@ -564,16 +644,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // HISTORY ITEM MUTATION WORKFLOW TRIGGERS
     const registerHistoryEventActionHooks = () => {
-        // Toggle Local Favorite States
+        // Toggle Favorite (Supabase-backed)
         document.querySelectorAll('.fav-trigger').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const recordId = btn.getAttribute('data-id');
-                const key = `mailcraft_fav_${recordId}`;
-                const currentState = localStorage.getItem(key) === 'true';
-                localStorage.setItem(key, !currentState);
-                triggerToast(!currentState ? 'Added to workspace favorites.' : 'Removed from workspace favorites.', 'info');
-                executeRenderHistoryDOMGrid();
+                const structuralToken = localStorage.getItem('mailcraft_jwt_token');
+                try {
+                    const res = await fetch(`${API_ROOT}/ai/history/${recordId}/favorite`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${structuralToken}` }
+                    });
+                    const packet = await res.json();
+                    if (!packet.success) return triggerToast(packet.message || 'Unable to update favorite.', 'error');
+
+                    const idx = loadedHistoryCache.findIndex(r => r.id === recordId);
+                    if (idx !== -1) loadedHistoryCache[idx] = packet.data;
+                    triggerToast(packet.data.is_favorite ? 'Added to favorites.' : 'Removed from favorites.', 'info');
+                    executeRenderHistoryDOMGrid();
+                } catch (err) {
+                    triggerToast('Network error updating favorite.', 'error');
+                }
+            });
+        });
+
+        // Rename History Item
+        document.querySelectorAll('.rename-trigger').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const recordId = btn.getAttribute('data-id');
+                const newTitle = prompt('Enter a new name for this entry:');
+                if (!newTitle || !newTitle.trim()) return;
+
+                const structuralToken = localStorage.getItem('mailcraft_jwt_token');
+                try {
+                    const res = await fetch(`${API_ROOT}/ai/history/${recordId}/rename`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${structuralToken}`
+                        },
+                        body: JSON.stringify({ customTitle: newTitle.trim() })
+                    });
+                    const packet = await res.json();
+                    if (!packet.success) return triggerToast(packet.message || 'Unable to rename entry.', 'error');
+
+                    const idx = loadedHistoryCache.findIndex(r => r.id === recordId);
+                    if (idx !== -1) loadedHistoryCache[idx] = packet.data;
+                    triggerToast('Entry renamed successfully.');
+                    executeRenderHistoryDOMGrid();
+                } catch (err) {
+                    triggerToast('Network error renaming entry.', 'error');
+                }
             });
         });
 
@@ -607,14 +729,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Delete Simulation Handler
+        // Delete History Item (Supabase-backed)
         document.querySelectorAll('.delete-trigger').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const recordId = btn.getAttribute('data-id');
-                // Remove out from internal runtime array cache explicitly
-                loadedHistoryCache = loadedHistoryCache.filter(r => r.id !== recordId);
-                triggerToast('Ecosystem metric node deleted from trace ledger.', 'warning');
-                executeRenderHistoryDOMGrid();
+                if (!confirm('Delete this history entry? This cannot be undone.')) return;
+
+                const structuralToken = localStorage.getItem('mailcraft_jwt_token');
+                try {
+                    const res = await fetch(`${API_ROOT}/ai/history/${recordId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${structuralToken}` }
+                    });
+                    const packet = await res.json();
+                    if (!packet.success) return triggerToast(packet.message || 'Unable to delete entry.', 'error');
+
+                    loadedHistoryCache = loadedHistoryCache.filter(r => r.id !== recordId);
+                    triggerToast('History entry deleted.', 'warning');
+                    executeRenderHistoryDOMGrid();
+                } catch (err) {
+                    triggerToast('Network error deleting entry.', 'error');
+                }
             });
         });
     };
@@ -681,11 +816,106 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ==========================================================================
        PROFILE MANAGER (SYSTEM SETTINGS) — ADDITIVE MODULE
        ========================================================================== */
+    let userMatchStyleDefault = false;
+
+    const assembleSignatureText = (sig) => {
+        if (!sig) return '';
+        if (sig.rawText && sig.rawText.trim()) return sig.rawText.trim();
+        const lines = [];
+        if (sig.fullName) lines.push(sig.fullName);
+        if (sig.jobTitle) lines.push(sig.jobTitle);
+        if (sig.company) lines.push(sig.company);
+        if (sig.contact) lines.push(sig.contact);
+        if (sig.website) lines.push(sig.website);
+        return lines.join('\n');
+    };
+
+    const renderSignatureBlocks = (signaturesArray) => {
+        const container = document.getElementById('signaturesListContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        signaturesArray.forEach((sig) => {
+            const block = document.createElement('div');
+            block.className = 'signature-entry-block';
+            block.setAttribute('data-sig-id', sig.id);
+            block.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
+                    <input type="text" class="custom-input-box-element sig-label-input" placeholder="Label (e.g. Formal)" value="${sig.label || ''}" style="font-weight:600;">
+                    <button type="button" class="output-clipboard-action-btn sig-remove-btn" data-target="${sig.id}"><i data-lucide="trash-2"></i> Remove</button>
+                </div>
+                <div class="form-row-tri-layout" style="margin-bottom:10px;">
+                    <input type="text" class="custom-input-box-element sig-fullname-input" placeholder="Full Name" value="${sig.fullName || ''}">
+                    <input type="text" class="custom-input-box-element sig-jobtitle-input" placeholder="Job Title" value="${sig.jobTitle || ''}">
+                    <input type="text" class="custom-input-box-element sig-company-input" placeholder="Company" value="${sig.company || ''}">
+                </div>
+                <div class="form-row-tri-layout" style="margin-bottom:10px;">
+                    <input type="text" class="custom-input-box-element sig-contact-input" placeholder="Phone / Contact" value="${sig.contact || ''}">
+                    <input type="text" class="custom-input-box-element sig-website-input" placeholder="Website / Link" value="${sig.website || ''}">
+                </div>
+                <textarea class="interactive-textarea sig-rawtext-input" rows="2" placeholder="Or paste custom signature text (overrides fields above)">${sig.rawText || ''}</textarea>
+            `;
+            container.appendChild(block);
+        });
+
+        initIcons();
+
+        document.querySelectorAll('.sig-remove-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                userSignatures = userSignatures.filter(s => s.id !== targetId);
+                renderSignatureBlocks(userSignatures);
+            });
+        });
+    };
+
+    const gatherSignaturesFromDOM = () => {
+        const blocks = document.querySelectorAll('.signature-entry-block');
+        const result = [];
+        blocks.forEach(block => {
+            result.push({
+                id: block.getAttribute('data-sig-id'),
+                label: block.querySelector('.sig-label-input')?.value || 'Untitled',
+                fullName: block.querySelector('.sig-fullname-input')?.value || '',
+                jobTitle: block.querySelector('.sig-jobtitle-input')?.value || '',
+                company: block.querySelector('.sig-company-input')?.value || '',
+                contact: block.querySelector('.sig-contact-input')?.value || '',
+                website: block.querySelector('.sig-website-input')?.value || '',
+                rawText: block.querySelector('.sig-rawtext-input')?.value || ''
+            });
+        });
+        return result;
+    };
+
+    const populateGenSignatureDropdown = () => {
+        const select = document.getElementById('genSignatureSelect');
+        if (!select) return;
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">None</option>';
+        userSignatures.forEach(sig => {
+            const opt = document.createElement('option');
+            opt.value = sig.id;
+            opt.textContent = sig.label || 'Untitled';
+            select.appendChild(opt);
+        });
+        if ([...select.options].some(o => o.value === currentVal)) select.value = currentVal;
+    };
+
+    const addSignatureBtn = document.getElementById('addSignatureBtn');
+    if (addSignatureBtn) {
+        addSignatureBtn.addEventListener('click', () => {
+            userSignatures.push({
+                id: `sig_${Date.now()}`,
+                label: '', fullName: '', jobTitle: '', company: '', contact: '', website: '', rawText: ''
+            });
+            renderSignatureBlocks(userSignatures);
+        });
+    }
+
     const loadProfileSettings = async () => {
         const nameInput = document.getElementById('settingsFullName');
         const emailInput = document.getElementById('settingsEmailDisplay');
         const titleInput = document.getElementById('settingsTitle');
-        const sigInput = document.getElementById('settingsSignature');
         if (!nameInput) return;
 
         const structuralToken = localStorage.getItem('mailcraft_jwt_token');
@@ -701,12 +931,28 @@ document.addEventListener('DOMContentLoaded', () => {
             nameInput.value = packet.data.name || '';
             emailInput.value = packet.data.email || '';
             titleInput.value = packet.data.title || '';
-            sigInput.value = packet.data.signature || '';
+
+            userSignatures = packet.data.signatures || [];
+            renderSignatureBlocks(userSignatures);
+            populateGenSignatureDropdown();
+
+            const s1 = document.getElementById('writingSample1');
+            const s2 = document.getElementById('writingSample2');
+            const s3 = document.getElementById('writingSample3');
+            const matchDefault = document.getElementById('matchStyleDefault');
+            if (s1) s1.value = packet.data.writing_sample_1 || '';
+            if (s2) s2.value = packet.data.writing_sample_2 || '';
+            if (s3) s3.value = packet.data.writing_sample_3 || '';
+            if (matchDefault) matchDefault.checked = !!packet.data.match_style_default;
+
+            const genToggle = document.getElementById('genMatchStyleToggle');
+            const impToggle = document.getElementById('impMatchStyleToggle');
+            if (genToggle) genToggle.checked = !!packet.data.match_style_default;
+            if (impToggle) impToggle.checked = !!packet.data.match_style_default;
         } catch (err) {
             triggerToast('Unable to load profile details.', 'error');
         }
     };
-
     const formProfileSettings = document.getElementById('formProfileSettings');
     if (formProfileSettings) {
         formProfileSettings.addEventListener('submit', async (e) => {
@@ -725,7 +971,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         name: document.getElementById('settingsFullName').value,
                         title: document.getElementById('settingsTitle').value,
-                        signature: document.getElementById('settingsSignature').value
+                        signatures: gatherSignaturesFromDOM(),
+                        writingSample1: document.getElementById('writingSample1').value,
+                        writingSample2: document.getElementById('writingSample2').value,
+                        writingSample3: document.getElementById('writingSample3').value,
+                        matchStyleDefault: document.getElementById('matchStyleDefault').checked
                     })
                 });
                 const packet = await res.json();
@@ -743,6 +993,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (nameDisplay) nameDisplay.textContent = packet.data.name;
                 if (initialsDisplay && packet.data.name) initialsDisplay.textContent = packet.data.name.substring(0, 2).toUpperCase();
 
+                userSignatures = packet.data.signatures || [];
+                renderSignatureBlocks(userSignatures);
+                populateGenSignatureDropdown();
+
                 triggerToast('Profile updated successfully.');
             } catch (err) {
                 btn.disabled = false;
@@ -750,8 +1004,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    const loadUsageAnalytics = async () => {
+        const structuralToken = localStorage.getItem('mailcraft_jwt_token');
+        if (!structuralToken) return;
+
+        try {
+            const res = await fetch(`${API_ROOT}/ai/analytics`, {
+                headers: { 'Authorization': `Bearer ${structuralToken}` }
+            });
+            const packet = await res.json();
+            if (!packet.success) return;
+
+            const map = {
+                statTotalGenerated: packet.data.totalGenerated,
+                statTotalSmartReplies: packet.data.totalSmartReplies,
+                statTotalGrammar: packet.data.totalGrammarChecks,
+                statTotalTone: packet.data.totalToneRewrites,
+                statTotalSummary: packet.data.totalSummaries,
+                statTotalTranslation: packet.data.totalTranslations,
+                statTotalRequests: packet.data.totalRequests
+            };
+
+            Object.keys(map).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = map[id];
+            });
+        } catch (err) {
+            triggerToast('Unable to load usage analytics.', 'error');
+        }
+    };
 
     const settingsNavNode = document.querySelector('.nav-control-node[data-panel="settings"]');
-    if (settingsNavNode) settingsNavNode.addEventListener('click', loadProfileSettings);
+    if (settingsNavNode) settingsNavNode.addEventListener('click', () => { loadProfileSettings(); loadUsageAnalytics(); });
     loadProfileSettings();
+    loadUsageAnalytics();
 });

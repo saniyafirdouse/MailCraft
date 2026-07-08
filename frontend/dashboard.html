@@ -30,6 +30,10 @@
                     <div class="nav-indicator"></div>
                     <i data-lucide="pencil-line"></i><span>Generator</span>
                 </button>
+                <button class="nav-control-node" data-panel="smartreply">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="reply"></i><span>Smart Reply</span>
+                </button>
                 <button class="nav-control-node" data-panel="improve">
                     <div class="nav-indicator"></div>
                     <i data-lucide="wand-2"></i><span>Improver</span>
@@ -152,7 +156,26 @@
                                     </select>
                                 </div>
                             </div>
+                           <div class="form-field" style="margin-bottom:4px;">
+                                <label>Signature</label>
+                                <select id="genSignatureSelect" class="custom-select-element">
+                                    <option value="">None</option>
+                                </select>
+                            </div>
+                            
+                            <div class="interactive-switch-row" style="padding:4px 0;">
+                                <div class="switch-description-block">
+                                    <span class="switch-title">Match My Writing Style</span>
+                                    <span class="switch-caption">Use your saved writing samples to guide the AI's voice.</span>
+                                </div>
+                                <label class="toggle-switch-ui-box">
+                                    <input type="checkbox" id="genMatchStyleToggle">
+                                    <span class="toggle-slider-nob"></span>
+                                </label>
+                            </div>
                             <button type="submit" class="btn btn-gradient btn-large w-100 execution-trigger-btn" id="btnGenSubmit">
+
+
                                 <span>Generate with AI</span>
                                 <i data-lucide="sparkles"></i>
                             </button>
@@ -207,8 +230,7 @@
                                     <span class="card-classification-badge"><i data-lucide="pen-tool"></i> Professional Signature</span>
                                     <button class="output-clipboard-action-btn" id="copySigBtn"><i data-lucide="copy"></i> Copy</button>
                                 </div>
-                                <div class="rendered-text-canvas email-typography-body" id="outGenSignature">Kind Regards,&#10;&#10;Pruthvi&#10;Computer Science Student&#10;GitHub: github.com/pruthvi&#10;LinkedIn: linkedin.com/in/pruthvi</div>
-                            </div>
+                                <div class="rendered-text-canvas email-typography-body" id="outGenSignature">Your saved signature will appear here after generating an email.</div>                            </div>
 
                             <!-- CARD 4: CONTEXTUAL STRATEGIC SUGGESTIONS -->
                             <div class="surface-card utility-suggestion-card animate-fade-in">
@@ -226,6 +248,42 @@
                 </div>
             </section>
 
+            <!-- PANEL: SMART REPLY -->
+            <section id="panel-smartreply" class="workspace-panel">
+                <div class="workspace-panel-header">
+                    <h1>Smart Reply</h1>
+                    <p>Paste an email you received and get 3 ready-to-send reply options.</p>
+                </div>
+                <div class="panel-layout-grid">
+                    <div class="input-parameters-column">
+                        <form class="surface-card parameters-form" id="formSmartReply">
+                            <div class="form-field">
+                                <label>Received Email</label>
+                                <textarea id="smartReplyText" rows="10" placeholder="Paste the email you received here..." class="interactive-textarea" required></textarea>
+                            </div>
+                            <div class="form-field">
+                                <label>Additional Instructions (Optional)</label>
+                                <textarea id="smartReplyInstructions" rows="3" placeholder="Any queries, restrictions, or specific points you want addressed in the replies..." class="interactive-textarea"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-gradient btn-large w-100 execution-trigger-btn" id="btnSmartReplySubmit">
+                                <span>Generate Replies</span>
+                                <i data-lucide="reply"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="outputs-display-pipeline">
+                        <div class="skeleton-loading-container" id="smartReplySkeletonView" style="display: none;">
+                            <div class="skeleton-bar title-skeleton animate-pulse"></div>
+                            <div class="skeleton-card animate-pulse" style="height: 120px;"></div>
+                            <div class="skeleton-card animate-pulse" style="height: 120px;"></div>
+                            <div class="skeleton-card animate-pulse" style="height: 120px;"></div>
+                            <p class="skeleton-loading-label">AI is drafting your replies...</p>
+                        </div>
+                        <div id="smartReplyOutputsGroup" style="display:flex; flex-direction:column; gap:16px;"></div>
+                    </div>
+                </div>
+            </section>
+
             <!-- PANEL: IMPROVER -->
                 <section id="panel-improve" class="workspace-panel">
                 <div class="workspace-panel-header">
@@ -239,8 +297,19 @@
                                 <label>Draft Copy Canvas</label>
                                 <textarea id="impText" rows="12" placeholder="Paste structural email copy here to run optimization routines..." class="interactive-textarea" required></textarea>
                             </div>
+                            <div class="interactive-switch-row" style="padding:4px 0;">
+                                <div class="switch-description-block">
+                                    <span class="switch-title">Match My Writing Style</span>
+                                    <span class="switch-caption">Use your saved writing samples to guide the AI's voice.</span>
+                                </div>
+                                <label class="toggle-switch-ui-box">
+                                    <input type="checkbox" id="impMatchStyleToggle">
+                                    <span class="toggle-slider-nob"></span>
+                                </label>
+                            </div>
                             <button type="submit" class="btn btn-gradient w-100" id="btnImpSubmit">Optimize Copy Layout</button>
                         </form>
+
                     </div>
                     <div class="outputs-display-pipeline">
                         <div class="surface-card dynamic-output-card">
@@ -429,6 +498,7 @@
                     <div class="filter-actions-selectors-group">
                         <select id="histTypeFilter" class="custom-select-element select-sm">
                             <option value="ALL">All Tools</option>
+                            <option value="FAVORITES">⭐ Favorites Only</option>
                             <option value="generation">Generations</option>
                             <option value="improvement">Improvements</option>
                         </select>
@@ -469,10 +539,34 @@
                     <input type="text" id="settingsTitle" class="custom-input-box-element" placeholder="e.g. Computer Science Student">
                 </div>
                 <div class="form-field" style="margin-bottom:14px;">
-                    <label>Default Email Signature</label>
-                    <textarea id="settingsSignature" rows="4" class="interactive-textarea" placeholder="Kind Regards,&#10;Your Name"></textarea>
+                    <label>Email Signatures</label>
+                    <div id="signaturesListContainer" style="display:flex; flex-direction:column; gap:14px; margin-bottom:12px;"></div>
+                    <button type="button" class="btn btn-secondary" id="addSignatureBtn"><i data-lucide="plus"></i> Add Signature</button>
                 </div>
-                <button type="submit" class="btn btn-gradient" id="btnProfileSave">
+
+                <div class="form-field" style="margin-bottom:14px;">
+                    <label>Writing Sample 1</label>
+                    <textarea id="writingSample1" rows="4" class="interactive-textarea" placeholder="Paste an email you personally wrote..."></textarea>
+                </div>
+                <div class="form-field" style="margin-bottom:14px;">
+                    <label>Writing Sample 2</label>
+                    <textarea id="writingSample2" rows="4" class="interactive-textarea" placeholder="Paste another email you personally wrote..."></textarea>
+                </div>
+                <div class="form-field" style="margin-bottom:14px;">
+                    <label>Writing Sample 3</label>
+                    <textarea id="writingSample3" rows="4" class="interactive-textarea" placeholder="Paste a third email you personally wrote (optional)..."></textarea>
+                </div>
+                <div class="interactive-switch-row">
+                    <div class="switch-description-block">
+                        <span class="switch-title">Always Match My Writing Style</span>
+                        <span class="switch-caption">Default the style-matching toggle to ON in Generator and Improver.</span>
+                    </div>
+                    <label class="toggle-switch-ui-box">
+                        <input type="checkbox" id="matchStyleDefault">
+                        <span class="toggle-slider-nob"></span>
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-gradient" id="btnProfileSave" style="margin-top:16px;">
                     <span>Save Changes</span>
                     <i data-lucide="save"></i>
                 </button>
@@ -480,7 +574,42 @@
         </div>
 
         <div class="surface-card config-group-card">
+            <h3>Usage Analytics</h3>
+            <div class="metrics-dashboard-row-layout" id="analyticsMetricsRow" style="flex-wrap:wrap; margin-bottom:0;">
+                <div class="surface-card metric-square-widget" style="min-width:130px;">
+                    <span class="widget-label">Emails Generated</span>
+                    <span class="widget-giant-metric" id="statTotalGenerated" style="font-size:1.8rem; color:var(--color-accent);">0</span>
+                </div>
+                <div class="surface-card metric-square-widget" style="min-width:130px;">
+                    <span class="widget-label">Smart Replies</span>
+                    <span class="widget-giant-metric" id="statTotalSmartReplies" style="font-size:1.8rem; color:var(--color-accent);">0</span>
+                </div>
+                <div class="surface-card metric-square-widget" style="min-width:130px;">
+                    <span class="widget-label">Grammar Checks</span>
+                    <span class="widget-giant-metric" id="statTotalGrammar" style="font-size:1.8rem; color:var(--color-accent);">0</span>
+                </div>
+                <div class="surface-card metric-square-widget" style="min-width:130px;">
+                    <span class="widget-label">Tone Rewrites</span>
+                    <span class="widget-giant-metric" id="statTotalTone" style="font-size:1.8rem; color:var(--color-accent);">0</span>
+                </div>
+                <div class="surface-card metric-square-widget" style="min-width:130px;">
+                    <span class="widget-label">Summaries</span>
+                    <span class="widget-giant-metric" id="statTotalSummary" style="font-size:1.8rem; color:var(--color-accent);">0</span>
+                </div>
+                <div class="surface-card metric-square-widget" style="min-width:130px;">
+                    <span class="widget-label">Translations</span>
+                    <span class="widget-giant-metric" id="statTotalTranslation" style="font-size:1.8rem; color:var(--color-accent);">0</span>
+                </div>
+                <div class="surface-card metric-square-widget" style="min-width:130px; background:var(--color-accent-subtle);">
+                    <span class="widget-label">Total AI Requests</span>
+                    <span class="widget-giant-metric" id="statTotalRequests" style="font-size:1.8rem; color:var(--color-accent);">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="surface-card config-group-card">
             <h3>Platform Interface Variations</h3>
+
                         <div class="interactive-switch-row">
                 <div class="switch-description-block">
                     <span class="switch-title">Show Notifications</span>
